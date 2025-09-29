@@ -25,69 +25,6 @@ When the **"Handle Checkout on Subdomain"** option is enabled, AB Tasty cookies 
 
 ---
 
-## Code Flow
-
-```mermaid
-flowchart TD
-    A["Shopify Checkout Events"] --> B["Pixel Script"]
-    B --> C["Extract Visitor ID + Campaigns from ABTasty Cookie"]
-    C --> D["Construct AB Tasty Batch Payload"]
-    D --> E["Send Payload via XMLHttpRequest"]
-    E --> F["AB Tasty Ingestion Endpoint"]
-```
-
-### Checkout Started Event (`EVENT`)
-
-```json
-{
-  "cid": "647122547a691c3986656385348xxxxx",
-  "vid": "visitor123",
-  "c": { "1501519": "1870324", "1508732": "1879639" },
-  "dl": "https://shop.com/checkout",
-  "dr": "https://shop.com/cart",
-  "pt": "Checkout",
-  "cst": 1738210000000,
-  "t": "BATCH",
-  "h": [
-    {
-      "t": "EVENT",
-      "ec": "Action Tracking",
-      "ea": "checkout_started",
-      "qt": 502
-    }
-  ]
-}
-```
-
-### Checkout Completed Transaction (`TRANSACTION`)
-
-```json
-{
-  "cid": "647122547a691c3986656385348xxxxx",
-  "vid": "visitor123",
-  "c": { "1501519": "1870324", "1508732": "1879639" },
-  "dl": "https://shop.com/checkout/thank_you",
-  "dr": "https://shop.com/checkout",
-  "pt": "Order Confirmation",
-  "cst": 1738210050000,
-  "t": "BATCH",
-  "h": [
-    {
-      "t": "TRANSACTION",
-      "tid": "order123",
-      "ta": "Purchase",
-      "tr": "99.99",
-      "tc": "GBP",
-      "ts": "4.99",
-      "icn": 3,
-      "qt": 503
-    }
-  ]
-}
-```
-
----
-
 ## How It Works
 1. **Initialization**  
    - Script wrapped in an IIFE to avoid polluting the global scope.  
@@ -118,6 +55,71 @@ flowchart TD
    - Uses `analytics.subscribe` from Shopify Checkout Extensibility:  
      - `checkout_started` → sends **EVENT payload**.  
      - `checkout_completed` → sends **TRANSACTION payload** with order details.  
+     
+---
+     
+## Code Flow
+
+```mermaid
+flowchart TD
+    A["Shopify Checkout Events"] --> B["Pixel Script"]
+    B --> C["Extract Visitor ID + Campaigns from ABTasty Cookie"]
+    C --> D["Construct AB Tasty Batch Payload"]
+    D --> E["Send Payload via XMLHttpRequest"]
+    E --> F["AB Tasty Ingestion Endpoint"]
+```
+
+### Checkout Started Event Payload (`EVENT`)
+
+```json
+{
+  "cid": "647122547a691c3986656385348xxxxx",
+  "vid": "visitor123",
+  "c": { "1501519": "1870324", "1508732": "1879639" },
+  "dl": "https://shop.com/checkout",
+  "dr": "https://shop.com/cart",
+  "pt": "Checkout",
+  "cst": 1738210000000,
+  "t": "BATCH",
+  "h": [
+    {
+      "t": "EVENT",
+      "ec": "Action Tracking",
+      "ea": "checkout_started",
+      "qt": 502
+    }
+  ]
+}
+```
+
+### Checkout Completed Transaction Payload (`TRANSACTION`)
+
+```json
+{
+  "cid": "647122547a691c3986656385348xxxxx",
+  "vid": "visitor123",
+  "c": { "1501519": "1870324", "1508732": "1879639" },
+  "dl": "https://shop.com/checkout/thank_you",
+  "dr": "https://shop.com/checkout",
+  "pt": "Order Confirmation",
+  "cst": 1738210050000,
+  "t": "BATCH",
+  "h": [
+    {
+      "t": "TRANSACTION",
+      "tid": "order123",
+      "ta": "Purchase",
+      "tr": "99.99",
+      "tc": "GBP",
+      "ts": "4.99",
+      "icn": 3,
+      "qt": 503
+    }
+  ]
+}
+```
+
+---
 
 ## Further Documentation
 
