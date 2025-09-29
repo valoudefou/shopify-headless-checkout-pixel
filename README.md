@@ -49,6 +49,12 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
      - `checkout_started` → sends **EVENT payload**.  
      - `checkout_completed` → sends **TRANSACTION payload** with order details.  
 
+## Further Documentation
+
+- [Shopify Web Pixels API – Checkout Started](https://shopify.dev/docs/api/web-pixels-api/standard-events/checkout_started)  
+- [Shopify Web Pixels API – Checkout Completed](https://shopify.dev/docs/api/web-pixels-api/standard-events/checkout_completed)  
+- [AB Tasty Transaction Tracking – Getting Started](https://docs.abtasty.com/client-side/transaction-tag-implementation/transaction-tracking-getting-started)
+
 ---
 
 ## Full Working Snippet
