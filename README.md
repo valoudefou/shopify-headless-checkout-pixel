@@ -7,7 +7,7 @@ This repository showcases a custom pixel script for Shopify’s extensibility ch
 
 By leveraging the AB Tasty cookie, the script ensures all payloads are tied to a **unique visitor ID (vid)** and their **active campaigns/variations**, enabling attribution of transactions back to experiments.
 
-When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will persist throughout the checkout process. This ensures that data can be effectively tracked and targeted using the Shopify custom pixel.
+When the **"Handle Checkout on Subdomain"** option is enabled, AB Tasty cookies will persist throughout the checkout process. This ensures that data can be effectively tracked and targeted using the Shopify custom pixel.
 
 <img 
     src="https://assets-manager.abtasty.com/1ceff369b6cd9aceaa9ee318e6498167/image.jpg" 
