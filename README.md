@@ -3,8 +3,7 @@
 # Shopify Checkout Events Pixel
 
 ## Overview
-This repository provides a **custom pixel script** designed for **Shopify’s extensibility checkout**.  
-The pixel listens to key lifecycle events — `checkout_started` and `checkout_completed` — and pushes them into **AB Tasty** for experimentation, personalization, attribution, and analytics workflows.  
+This repository showcases a custom pixel script for Shopify’s extensibility checkout, seamlessly integrated on top of the native [AB Tasty Shopify app](https://apps.shopify.com/ab-tasty-1) to capture and forward key checkout events.  
 
 By leveraging the AB Tasty cookie, the script ensures all payloads are tied to a **unique visitor ID (vid)** and their **active campaigns/variations**, enabling attribution of transactions back to experiments.
 
@@ -28,28 +27,13 @@ By leveraging the AB Tasty cookie, the script ensures all payloads are tied to a
      - **Visitor ID (`vid`)** → AB Tasty unique visitor identifier.  
      - **Campaigns (`c`)** → Map of campaign IDs and variation IDs.  
 
-   Example:
-   ```json
-   {
-     "vid": "visitor123",
-     "campaigns": { "1001": "2001", "1002": "2002" }
-   }
-   ```
-
 3. **Payload Construction**  
    - Builds a JSON payload conforming to AB Tasty’s **batch ingestion format**.  
-   - Fields include:
-     - `cid` → AB Tasty client/site ID  
-     - `vid` → visitor ID  
-     - `c` → campaigns map  
-     - `dl` → current page URL  
-     - `dr` → referrer URL  
-     - `pt` → page title  
-     - `cst` → timestamp  
+   - Appends `EVENT` or `TRANSACTION` objects depending on the checkout event type.  
 
 4. **Payload Dispatch**  
    - Sends payloads to **`https://ariane.abtasty.com/`** using `XMLHttpRequest`.  
-   - Includes success/error console logs.  
+   - Logs success/error status to the console.  
 
 5. **Shopify Checkout Integration**  
    - Uses `analytics.subscribe` from Shopify Checkout Extensibility:  
@@ -58,124 +42,83 @@ By leveraging the AB Tasty cookie, the script ensures all payloads are tied to a
 
 ---
 
-## Code Flow
+## Full Working Snippet
 
-```mermaid
-flowchart TD
-    A[Shopify Checkout Events] --> B[Pixel Script]
-    B --> C[Extract Visitor ID + Campaigns from ABTasty Cookie]
-    C --> D[Construct AB Tasty Batch Payload]
-    D --> E[Send Payload via XMLHttpRequest]
-    E --> F[AB Tasty Ingestion Endpoint]
-```
+```javascript
+(function() {
+  const ABTASTY_CID = "647122547a691c3986656385348f326a";
 
----
+  function safeGetCookie(name) {
+    try {
+      const match = document.cookie.match(new RegExp(name + "=([^;]+)"));
+      return match ? decodeURIComponent(match[1]) : null;
+    } catch (e) { return null; }
+  }
 
-## Payload Examples
+  function extractUidAndCampaignsFromCookie() {
+    const abCookie = safeGetCookie("ABTasty");
+    if (!abCookie) return { uid: null, campaigns: {} };
 
-### `checkout_started` → EVENT
+    const params = new URLSearchParams(abCookie);
+    const uid = params.get("uid");
+    const th = params.get("th");
+    let campaigns = {};
 
-```json
-{
-  "cid": "647122547a691c3986656385348f326a",
-  "vid": "visitor123",
-  "c": { "1001": "2001" },
-  "dl": "https://shop.com/checkout",
-  "dr": "https://shop.com/cart",
-  "pt": "Checkout",
-  "cst": 1738210000000,
-  "t": "BATCH",
-  "h": [
-    {
-      "t": "EVENT",
-      "ec": "Action Tracking",
-      "ea": "checkout_started",
-      "qt": 502
+    if (th) {
+      th.split("_").forEach(token => {
+        const match = token.match(/^(\d+)\.(\d+)/);
+        if (match) campaigns[match[1]] = match[2];
+      });
     }
-  ]
-}
-```
 
-### `checkout_completed` → TRANSACTION
+    return { uid, campaigns };
+  }
 
-```json
-{
-  "cid": "647122547a691c3986656385348f326a",
-  "vid": "visitor123",
-  "c": { "1001": "2001" },
-  "dl": "https://shop.com/checkout/thank_you",
-  "dr": "https://shop.com/checkout",
-  "pt": "Order Confirmation",
-  "cst": 1738210050000,
-  "t": "BATCH",
-  "h": [
-    {
-      "t": "TRANSACTION",
-      "tid": "order123",
-      "ta": "Purchase",
-      "tr": "99.99",
-      "tc": "GBP",
-      "ts": "4.99",
-      "icn": 3,
-      "qt": 503
+  function fetchABTastyData() {
+    const { uid, campaigns } = extractUidAndCampaignsFromCookie();
+    return uid ? { vid: uid, campaigns } : { vid: null, campaigns: {} };
+  }
+
+  function constructPayload(vid, campaigns, eventType, eventDetails = {}) {
+    if (!vid) return null;
+    const basePayload = { cid: ABTASTY_CID, vid, c: campaigns || {}, dl: window.location.href, dr: document.referrer || window.location.href, pt: document.title || "", cst: Date.now(), t: "BATCH", h: [] };
+
+    if (eventType === "EVENT") {
+      basePayload.h.push({ t: "EVENT", ec: eventDetails.ec || "Action Tracking", ea: eventDetails.ea || "checkout_started", qt: eventDetails.qt || 502 });
+    } else if (eventType === "TRANSACTION") {
+      basePayload.h.push({ t: "TRANSACTION", tid: eventDetails.tid, ta: eventDetails.ta || "Purchase", tr: eventDetails.tr, tc: eventDetails.tc, ts: eventDetails.ts, icn: eventDetails.icn, qt: eventDetails.qt || 503 });
     }
-  ]
-}
+
+    return basePayload;
+  }
+
+  function sendBatch(payload) {
+    if (!payload) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://ariane.abtasty.com/", true);
+    xhr.setRequestHeader("Content-Type", "text/plain");
+    xhr.send(JSON.stringify(payload));
+  }
+
+  function getTransactionId(checkout) { return checkout.order?.id || checkout.id; }
+  function getTotalRevenue(checkout) { return checkout.totalPrice?.amount || 0; }
+  function getCurrency(checkout) { return checkout.totalPrice?.currencyCode || "GBP"; }
+  function getItemCount(checkout) { return checkout.lineItems.reduce((sum, item) => sum + item.quantity, 0); }
+  function getTransactionShipping(checkout) { return checkout.totalShippingPrice?.amount || 0; }
+
+  (function init() {
+    analytics.subscribe("checkout_started", (event) => {
+      const { vid, campaigns } = fetchABTastyData();
+      if (!vid) return;
+      sendBatch(constructPayload(vid, campaigns, "EVENT", { ea: "checkout_started" }));
+    });
+
+    analytics.subscribe("checkout_completed", (event) => {
+      const checkout = event.data.checkout;
+      const { vid, campaigns } = fetchABTastyData();
+      if (!vid) return;
+      sendBatch(constructPayload(vid, campaigns, "TRANSACTION", { tid: getTransactionId(checkout), tr: getTotalRevenue(checkout), tc: getCurrency(checkout), icn: getItemCount(checkout), ts: getTransactionShipping(checkout) }));
+    });
+  })();
+})();
 ```
-
----
-
-## Key Functions Explained
-
-### Cookie Handling
-- `safeGetCookie(name)` → safely retrieves cookies.  
-- `extractUidAndCampaignsFromCookie()` → parses AB Tasty cookie for `vid` and campaigns.  
-
-### AB Tasty Data Fetcher
-- `fetchABTastyData()` → wrapper returning `{ vid, campaigns }`.  
-
-### Payload Builder
-- `constructPayload(vid, campaigns, eventType, eventDetails)` → creates structured batch payload.  
-
-### Shopify Checkout Helpers
-- `getTransactionId(checkout)` → order ID  
-- `getTotalRevenue(checkout)` → total revenue  
-- `getCurrency(checkout)` → currency code  
-- `getItemCount(checkout)` → item count  
-- `getTransactionShipping(checkout)` → shipping amount  
-
-### Event Subscriptions
-- `checkout_started` → triggers **EVENT payload**  
-- `checkout_completed` → triggers **TRANSACTION payload**  
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/<your-org>/shopify-checkout-events-pixel.git
-cd shopify-checkout-events-pixel
-```
-
-1. Copy `pixel.js` into your Shopify app extension.  
-2. In **Shopify Admin → Customer Events**, register the pixel.  
-3. Deploy and validate using console logs and AB Tasty reporting.  
-
----
-
-## Integration Notes
-- Requires the `ABTasty` cookie to be present.  
-- Payloads sent to **https://ariane.abtasty.com/** in batch format.  
-- Designed for **Shopify Checkout Extensibility**.  
-- Extensible to capture more events (e.g., cart updates, payment step).  
-
----
-
-## Contributing
-- Open an issue for feature requests or bug reports.  
-- Submit PRs with clear commit messages and test steps.  
-
----
-
-## License
-MIT License
