@@ -34,7 +34,14 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
    - Reads the `ABTasty` cookie.  
    - Extracts:
      - **Visitor ID (`vid`)** → AB Tasty unique visitor identifier.  
-     - **Campaigns (`c`)** → Map of campaign IDs and variation IDs.  
+     - **Campaigns (`c`)** → Map of campaign IDs and variation IDs.
+    
+   Example:
+   ```json
+   {
+     "vid": "visitor123",
+     "campaigns": { "1001": "2001", "1002": "2002" }
+   }
 
 3. **Payload Construction**  
    - Builds a JSON payload conforming to AB Tasty’s **batch ingestion format**.  
