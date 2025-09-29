@@ -61,7 +61,7 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
 
 ```javascript
 (function() {
-  const ABTASTY_CID = "647122547a691c3986656385348f326a";
+  const ABTASTY_CID = "647122547a691c3986656385348xxxxx";
 
   function safeGetCookie(name) {
     try {
