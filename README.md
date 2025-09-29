@@ -40,9 +40,9 @@ flowchart TD
 
 ```json
 {
-  "cid": "647122547a691c3986656385348f326a",
+  "cid": "647122547a691c3986656385348xxxxx",
   "vid": "visitor123",
-  "c": { "1001": "2001" },
+  "c": { "1501519": "1870324", "1508732": "1879639" },
   "dl": "https://shop.com/checkout",
   "dr": "https://shop.com/cart",
   "pt": "Checkout",
@@ -63,9 +63,9 @@ flowchart TD
 
 ```json
 {
-  "cid": "647122547a691c3986656385348f326a",
+  "cid": "647122547a691c3986656385348xxxxx",
   "vid": "visitor123",
-  "c": { "1001": "2001" },
+  "c": { "1501519": "1870324", "1508732": "1879639" },
   "dl": "https://shop.com/checkout/thank_you",
   "dr": "https://shop.com/checkout",
   "pt": "Order Confirmation",
