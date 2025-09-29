@@ -25,7 +25,7 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
 
 ---
 
-## Code Flow
+
 
 ```mermaid
 flowchart TD
