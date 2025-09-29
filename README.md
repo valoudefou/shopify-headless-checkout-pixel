@@ -25,7 +25,7 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
 
 ---
 
-
+## Code Flow
 
 ```mermaid
 flowchart TD
@@ -34,6 +34,57 @@ flowchart TD
     C --> D["Construct AB Tasty Batch Payload"]
     D --> E["Send Payload via XMLHttpRequest"]
     E --> F["AB Tasty Ingestion Endpoint"]
+```
+
+### Checkout Started Event (`EVENT`)
+
+```json
+{
+  "cid": "647122547a691c3986656385348f326a",
+  "vid": "visitor123",
+  "c": { "1001": "2001" },
+  "dl": "https://shop.com/checkout",
+  "dr": "https://shop.com/cart",
+  "pt": "Checkout",
+  "cst": 1738210000000,
+  "t": "BATCH",
+  "h": [
+    {
+      "t": "EVENT",
+      "ec": "Action Tracking",
+      "ea": "checkout_started",
+      "qt": 502
+    }
+  ]
+}
+```
+
+### Checkout Completed Transaction (`TRANSACTION`)
+
+```json
+{
+  "cid": "647122547a691c3986656385348f326a",
+  "vid": "visitor123",
+  "c": { "1001": "2001" },
+  "dl": "https://shop.com/checkout/thank_you",
+  "dr": "https://shop.com/checkout",
+  "pt": "Order Confirmation",
+  "cst": 1738210050000,
+  "t": "BATCH",
+  "h": [
+    {
+      "t": "TRANSACTION",
+      "tid": "order123",
+      "ta": "Purchase",
+      "tr": "99.99",
+      "tc": "GBP",
+      "ts": "4.99",
+      "icn": 3,
+      "qt": 503
+    }
+  ]
+}
+```
 
 ---
 
