@@ -27,13 +27,12 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
 
 ## Code Flow
 
-```mermaid
 flowchart TD
-    A[Shopify Checkout Events] --> B[Pixel Script]
-    B --> C[Extract Visitor ID + Campaigns from ABTasty Cookie]
-    C --> D[Construct AB Tasty Batch Payload]
-    D --> E[Send Payload via XMLHttpRequest]
-    E --> F[AB Tasty Ingestion Endpoint]
+    A["Shopify Checkout Events"] --> B["Pixel Script"]
+    B --> C["Extract Visitor ID + Campaigns from ABTasty Cookie"]
+    C --> D["Construct AB Tasty Batch Payload"]
+    D --> E["Send Payload via XMLHttpRequest"]
+    E --> F["AB Tasty Ingestion Endpoint"]
 
 ---
 
