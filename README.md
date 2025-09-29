@@ -129,7 +129,7 @@ flowchart TD
 
 ---
 
-## Full Working Snippet replace ABTASTY_CID
+## Full Working Snippet ABTASTY_CID to replace before using
 
 ```javascript
 (function() {
