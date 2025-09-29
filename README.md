@@ -25,6 +25,18 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
 
 ---
 
+## Code Flow
+
+```mermaid
+flowchart TD
+    A[Shopify Checkout Events] --> B[Pixel Script]
+    B --> C[Extract Visitor ID + Campaigns from ABTasty Cookie]
+    C --> D[Construct AB Tasty Batch Payload]
+    D --> E[Send Payload via XMLHttpRequest]
+    E --> F[AB Tasty Ingestion Endpoint]
+
+---
+
 ## How It Works
 1. **Initialization**  
    - Script wrapped in an IIFE to avoid polluting the global scope.  
@@ -40,7 +52,7 @@ When the "Handle Checkout on Subdomain" option is enabled, AB Tasty cookies will
    ```json
    {
      "vid": "visitor123",
-     "campaigns": { "1001": "2001", "1002": "2002" }
+     "campaigns": { "1501519": "1870324", "1508732": "1879639" }
    }
 
 3. **Payload Construction**  
