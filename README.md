@@ -15,15 +15,11 @@ When the **"Handle Checkout on Subdomain"** option is enabled, AB Tasty cookies 
     width="350"
 />
 
----
-
 ## Why This Pixel Matters
 
 - Shopify’s checkout extensibility was introduced to enhance security, preventing third-party scripts from executing. However, third-party data can still be captured in headless environments. Using a custom pixel allows you to natively track **customer journey milestones**.  
 - AB Tasty requires events to be sent in **batch ingestion format** to correctly attribute experiments.  
 - This pixel **bridges the gap** by listening to checkout events, enriching them with AB Tasty visitor and campaign context, and forwarding the data to the AB Tasty ingestion API.
-
----
 
 ## How It Works
 1. **Initialization**  
@@ -55,8 +51,6 @@ When the **"Handle Checkout on Subdomain"** option is enabled, AB Tasty cookies 
    - Uses `analytics.subscribe` from Shopify Checkout Extensibility:  
      - `checkout_started` → sends **EVENT payload**.  
      - `checkout_completed` → sends **TRANSACTION payload** with order details.  
-     
----
      
 ## Code Flow
 
@@ -119,15 +113,11 @@ flowchart TD
 }
 ```
 
----
-
 ## Further Documentation
 
 - [Shopify Web Pixels API – Checkout Started](https://shopify.dev/docs/api/web-pixels-api/standard-events/checkout_started)  
 - [Shopify Web Pixels API – Checkout Completed](https://shopify.dev/docs/api/web-pixels-api/standard-events/checkout_completed)  
 - [AB Tasty Transaction Tracking – Getting Started](https://docs.abtasty.com/client-side/transaction-tag-implementation/transaction-tracking-getting-started)
-
----
 
 ## Full Working Snippet ABTASTY_CID to replace before using
 
