@@ -135,77 +135,213 @@ flowchart TD
 (function() {
   const ABTASTY_CID = "647122547a691c3986656385348xxxxx";
 
+  // ------------------------
+  // Safe accessors
+  // ------------------------
   function safeGetCookie(name) {
     try {
       const match = document.cookie.match(new RegExp(name + "=([^;]+)"));
-      return match ? decodeURIComponent(match[1]) : null;
-    } catch (e) { return null; }
+      const value = match ? decodeURIComponent(match[1]) : null;
+      console.log("[ABTasty] getCookie:", name, "=>", value);
+      return value;
+    } catch (e) {
+      console.error("[ABTasty] getCookie failed:", e.message);
+      return null;
+    }
   }
 
+  // ------------------------
+  // Extract UID & multiple campaigns
+  // ------------------------
   function extractUidAndCampaignsFromCookie() {
-    const abCookie = safeGetCookie("ABTasty");
-    if (!abCookie) return { uid: null, campaigns: {} };
+    try {
+      const abCookie = safeGetCookie("ABTasty");
+      if (!abCookie) {
+        console.warn("[ABTasty] ABTasty cookie not found");
+        return { uid: null, campaigns: {} };
+      }
 
-    const params = new URLSearchParams(abCookie);
-    const uid = params.get("uid");
-    const th = params.get("th");
-    let campaigns = {};
+      const params = new URLSearchParams(abCookie);
+      const uid = params.get("uid");
+      const th = params.get("th");
 
-    if (th) {
-      th.split("_").forEach(token => {
-        const match = token.match(/^(\d+)\.(\d+)/);
-        if (match) campaigns[match[1]] = match[2];
-      });
+      let campaigns = {};
+
+      if (th) {
+        // Split th= value by underscores to get all campaign tokens
+        const tokens = th.split("_");
+        tokens.forEach(token => {
+          // Extract first two numeric fields before first two dots
+          const match = token.match(/^(\d+)\.(\d+)/);
+          if (match) {
+            const campaignId = match[1];
+            const variationId = match[2];
+            campaigns[campaignId] = variationId;
+            console.log("[ABTasty] Found campaign/variation:", campaignId, variationId);
+          }
+        });
+      }
+
+      console.log("[ABTasty] Extracted UID:", uid);
+      return { uid, campaigns };
+    } catch (e) {
+      console.error("[ABTasty] Failed to extract UID/campaigns:", e.message);
+      return { uid: null, campaigns: {} };
     }
-
-    return { uid, campaigns };
   }
 
   function fetchABTastyData() {
     const { uid, campaigns } = extractUidAndCampaignsFromCookie();
-    return uid ? { vid: uid, campaigns } : { vid: null, campaigns: {} };
+    if (!uid) {
+      console.warn("[ABTasty] No UID in cookie, aborting tracking");
+      return { vid: null, campaigns: {} };
+    }
+    return { vid: uid, campaigns };
   }
 
+  // ------------------------
+  // Payload builder
+  // ------------------------
   function constructPayload(vid, campaigns, eventType, eventDetails = {}) {
-    if (!vid) return null;
-    const basePayload = { cid: ABTASTY_CID, vid, c: campaigns || {}, dl: window.location.href, dr: document.referrer || window.location.href, pt: document.title || "", cst: Date.now(), t: "BATCH", h: [] };
-
-    if (eventType === "EVENT") {
-      basePayload.h.push({ t: "EVENT", ec: eventDetails.ec || "Action Tracking", ea: eventDetails.ea || "checkout_started", qt: eventDetails.qt || 502 });
-    } else if (eventType === "TRANSACTION") {
-      basePayload.h.push({ t: "TRANSACTION", tid: eventDetails.tid, ta: eventDetails.ta || "Purchase", tr: eventDetails.tr, tc: eventDetails.tc, ts: eventDetails.ts, icn: eventDetails.icn, qt: eventDetails.qt || 503 });
+    if (!vid) {
+      console.error("[ABTasty] constructPayload failed: VID is missing");
+      return null;
     }
 
+    const basePayload = {
+      cid: ABTASTY_CID,
+      vid,
+      c: campaigns || {},
+      dl: window.location.href,
+      dr: document.referrer || window.location.href,
+      pt: document.title || "",
+      de: "UTF-8",
+      cst: Date.now(),
+      sn: eventType === "EVENT" ? 1 : 3,
+      lv: eventType === "EVENT" ? "j0r0ZiOQ" : "tjCsBRQU",
+      tsv: eventType === "EVENT" ? "4.19.0" : "4.20.0",
+      tv: "latest",
+      tch: eventType === "EVENT" ? "e0214" : "b6c75",
+      t: "BATCH",
+      h: []
+    };
+
+    if (eventType === "EVENT") {
+      basePayload.h.push({
+        t: "EVENT",
+        ec: eventDetails.ec || "Action Tracking",
+        ea: eventDetails.ea || "checkout_started",
+        qt: eventDetails.qt || 502
+      });
+    } else if (eventType === "TRANSACTION") {
+      basePayload.h.push({
+        t: "TRANSACTION",
+        tid: eventDetails.tid,
+        ta: eventDetails.ta || "Purchase",
+        tr: eventDetails.tr,
+        tc: eventDetails.tc,
+        ts: eventDetails.ts,
+        icn: eventDetails.icn,
+        qt: eventDetails.qt || 503
+      });
+    }
+
+    console.log("[ABTasty] Payload constructed:", JSON.stringify(basePayload, null, 2));
     return basePayload;
   }
 
+  // ------------------------
+  // Send payload
+  // ------------------------
   function sendBatch(payload) {
-    if (!payload) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "https://ariane.abtasty.com/", true);
-    xhr.setRequestHeader("Content-Type", "text/plain");
-    xhr.send(JSON.stringify(payload));
+    if (!payload) {
+      console.warn("[ABTasty] sendBatch called with empty payload");
+      return;
+    }
+    try {
+      console.log("[ABTasty] Sending batch payload to AB Tasty:", payload);
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://ariane.abtasty.com/", true);
+      xhr.setRequestHeader("Content-Type", "text/plain");
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          console.log("[ABTasty] Response status:", xhr.status, "Response text:", xhr.responseText);
+        }
+      };
+      xhr.send(JSON.stringify(payload));
+    } catch (e) {
+      console.error("[ABTasty] Failed to send batch:", e.message);
+    }
   }
 
-  function getTransactionId(checkout) { return checkout.order?.id || checkout.id; }
-  function getTotalRevenue(checkout) { return checkout.totalPrice?.amount || 0; }
-  function getCurrency(checkout) { return checkout.totalPrice?.currencyCode || "GBP"; }
-  function getItemCount(checkout) { return checkout.lineItems.reduce((sum, item) => sum + item.quantity, 0); }
-  function getTransactionShipping(checkout) { return checkout.totalShippingPrice?.amount || 0; }
+  // ------------------------
+  // Transaction extractors (Shopify checkout)
+  // ------------------------
+  function getTransactionId(checkout) {
+    return checkout.order?.id || checkout.id;
+  }
 
+  function getTotalRevenue(checkout) {
+    return checkout.totalPrice?.amount || 0;
+  }
+
+  function getCurrency(checkout) {
+    return checkout.totalPrice?.currencyCode || "GBP";
+  }
+
+  function getItemCount(checkout) {
+    return checkout.lineItems.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  function getTransactionShipping(checkout) {
+    return checkout.totalShippingPrice?.amount || 0;
+  }
+
+  // ------------------------
+  // Init tracking
+  // ------------------------
   (function init() {
+    console.log("[ABTasty] Initialization started...");
+
+    // Subscribe to Shopify checkout_started event
     analytics.subscribe("checkout_started", (event) => {
       const { vid, campaigns } = fetchABTastyData();
-      if (!vid) return;
-      sendBatch(constructPayload(vid, campaigns, "EVENT", { ea: "checkout_started" }));
+      if (!vid) {
+        console.warn("[ABTasty] No UID found, checkout_started not tracked");
+        return;
+      }
+
+      const payload = constructPayload(vid, campaigns, "EVENT", {
+        ec: "Action Tracking",
+        ea: "checkout_started",
+        qt: 502
+      });
+
+      sendBatch(payload);
     });
 
+    // Subscribe to Shopify checkout_completed event
     analytics.subscribe("checkout_completed", (event) => {
       const checkout = event.data.checkout;
       const { vid, campaigns } = fetchABTastyData();
-      if (!vid) return;
-      sendBatch(constructPayload(vid, campaigns, "TRANSACTION", { tid: getTransactionId(checkout), tr: getTotalRevenue(checkout), tc: getCurrency(checkout), icn: getItemCount(checkout), ts: getTransactionShipping(checkout) }));
+      if (!vid) {
+        console.warn("[ABTasty] No UID found, transaction not tracked");
+        return;
+      }
+
+      const payload = constructPayload(vid, campaigns, "TRANSACTION", {
+        tid: getTransactionId(checkout),
+        tr: getTotalRevenue(checkout),
+        tc: getCurrency(checkout),
+        icn: getItemCount(checkout),
+        ts: getTransactionShipping(checkout)
+      });
+
+      sendBatch(payload);
     });
+
+    console.log("[ABTasty] Initialization completed");
   })();
+
 })();
 ```
