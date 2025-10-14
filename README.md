@@ -27,7 +27,7 @@ This integration captures AB Tasty experiment exposures and pushes them to the *
 
 ## Implementation Snippet
 
-Insert the following code wherever both AB Tasty template variables and Celebrus library are available. For guidance on where to place code in AB Tasty, see [AB Tasty Universal Connector](https://docs.abtasty.com/integrations/custom-integrations/custom-integration-connector-with-a-rd-party-tool-push-data).
+Insert the following code wherever both AB Tasty template variables and Celebrus library are available. For guidance on where to place code in AB Tasty, see [AB Tasty Custom Code Integration](https://help.abtasty.com/hc/en-us/articles/360013092839-Custom-JavaScript-in-your-campaigns).
 
 ```javascript
 if (window.CelebrusEQ) {
@@ -53,13 +53,17 @@ if (window.CelebrusEQ) {
 ```mermaid
 flowchart LR
     A[AB Tasty Template Vars] --> B[Tag Manager / Custom HTML Snippet]
-    B --> C[Celebrus EQ JS \- window.CelebrusEQ]
-    C --> D[Celebrus Data Platform]
+    B --> C[Celebrus EQ JS (window.CelebrusEQ)]
+```
 
-    style A fill:#f9f,stroke:#333,stroke-width:1px
-    style B fill:#bbf,stroke:#333,stroke-width:1px
-    style C fill:#bfb,stroke:#333,stroke-width:1px
-    style D fill:#ffb,stroke:#333,stroke-width:1px
+---
+
+## Optional Enhancements
+
+- Add **consent checks** to ensure events are only sent when the visitor has granted permission.  
+- Include additional **custom attributes** for richer analytics (e.g., page URL, user segment, device type).  
+- Use **dataLayer forwarding** if the same payload should be captured in other analytics platforms.  
+- Implement **error handling and logging** to monitor any failed payload sends.
 
 ---
 
