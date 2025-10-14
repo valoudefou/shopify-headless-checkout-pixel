@@ -3,7 +3,7 @@
 
 This integration captures AB Tasty experiment exposures and pushes them to the **Celebrus Data Collection platform** using template variables. It is designed for use in tag managers or other environments where AB Tasty template variables are available (`{{campaignId}}`, `{{campaignName}}`, etc.). It ensures **real-time data capture**, linking AB Tasty campaigns to Celebrus sessions for downstream analytics and personalisation.
 
----
+
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@ This integration captures AB Tasty experiment exposures and pushes them to the *
 - Basic knowledge of JavaScript or tag manager usage.  
 - Optionally, a **consent management solution** to respect visitor privacy regulations.
 
----
+
 
 ## Template Variables
 
@@ -23,7 +23,7 @@ This integration captures AB Tasty experiment exposures and pushes them to the *
 | `{{variationId}}`   | AB Tasty variant bucket ID            | `B`                              |
 | `{{variationName}}` | AB Tasty variant display name         | `"Variant B"`                   |
 
----
+
 
 ## Implementation Snippet
 
@@ -46,7 +46,7 @@ if (window.CelebrusEQ) {
 - `window.CelebrusEQ.send` sends the data directly into the Celebrus event queue.  
 - The `if (window.CelebrusEQ)` check prevents errors if the library is not loaded.
 
----
+
 
 ## Data Flow Diagram
 
@@ -56,19 +56,10 @@ flowchart LR
     B --> C[Celebrus EQ JS window.CelebrusEQ</a>]
 
     %% Real-time data flow arrow
-    A ---|Data pushed in real-time via AB Tasty code and Connector above| C
+    A ---|Real-time data via AB Tasty code and Connector| C
 ```
 
----
 
-## Optional Enhancements
-
-- Add **consent checks** to ensure events are only sent when the visitor has granted permission.  
-- Include additional **custom attributes** for richer analytics (e.g., page URL, user segment, device type).  
-- Use **dataLayer forwarding** if the same payload should be captured in other analytics platforms.  
-- Implement **error handling and logging** to monitor any failed payload sends.
-
----
 
 ## Outcome
 
