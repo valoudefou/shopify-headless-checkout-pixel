@@ -52,9 +52,11 @@ if (window.CelebrusEQ) {
 
 ```mermaid
 flowchart LR
-    A[AB Tasty Template Vars] --> B[DataLayer / Tag Manager Snippet]
-    B --> C[<a href="https://docs.celebrus.com/js-library" target="_blank">Celebrus EQ JS window.CelebrusEQ</a>]
+    A[AB Tasty Vars<br>] --> B[Tag Manager / Custom HTML Snippet]
+    B --> C[<a href="https://docs.celebrus.com/js-library" target="_blank">Celebrus EQ JS (window.CelebrusEQ)</a>]
 
+    %% Real-time data flow arrow
+    A ---|Data pushed in real-time| C
 ```
 
 ---
