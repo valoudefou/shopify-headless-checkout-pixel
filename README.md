@@ -53,7 +53,7 @@ if (window.CelebrusEQ) {
 ```mermaid
 flowchart LR
     A[AB Tasty Template Vars] --> B[Tag Manager / Custom HTML Snippet]
-    B --> C[Celebrus EQ JS (window.CelebrusEQ)]
+    B --> C[Celebrus EQ JS window.CelebrusEQ]
 ```
 
 ---
