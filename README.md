@@ -1,337 +1,72 @@
-<img src="https://content.partnerpage.io/eyJidWNrZXQiOiJwYXJ0bmVycGFnZS5wcm9kIiwia2V5IjoibWVkaWEvY29udGFjdF9pbWFnZXMvMDUwNGZlYTYtOWIxNy00N2IyLTg1YjUtNmY5YTZjZWU5OTJiLzI1NjhmYjk4LTQwM2ItNGI2OC05NmJiLTE5YTg1MzU3ZjRlMS5wbmciLCJlZGl0cyI6eyJ0b0Zvcm1hdCI6IndlYnAiLCJyZXNpemUiOnsid2lkdGgiOjEyMDAsImhlaWdodCI6NjI3LCJmaXQiOiJjb250YWluIiwiYmFja2dyb3VuZCI6eyJyIjoyNTUsImciOjI1NSwiYiI6MjU1LCJhbHBoYSI6MH19fX0=" alt="AB Tasty logo" width="350"/>
-
-# Shopify Checkout Extensibility Headless Checkout Events Pixel
-
+# AB Tasty → Celebrus Integration
 ## Overview
-This repository showcases a custom pixel script for Shopify’s extensibility checkout, seamlessly integrated on top of the native [AB Tasty Shopify app](https://apps.shopify.com/ab-tasty-1) to capture and forward key checkout events.  
 
-By leveraging the AB Tasty cookie, the script ensures all payloads are tied to a **unique visitor ID (vid)** and their **active campaigns/variations**, enabling attribution of transactions back to experiments.
+This integration captures AB Tasty experiment exposures and pushes them to the **Celebrus Data Collection platform** using template variables. It is designed for use in tag managers or other environments where AB Tasty template variables are available (`{{campaignId}}`, `{{campaignName}}`, etc.). It ensures **real-time data capture**, linking AB Tasty campaigns to Celebrus sessions for downstream analytics and personalisation.
 
-When the **"Handle Checkout on Subdomain"** option is enabled, AB Tasty cookies will persist throughout the checkout process. This ensures that data can be effectively tracked and targeted using the Shopify custom pixel.
+---
 
-<img 
-    src="https://assets-manager.abtasty.com/1ceff369b6cd9aceaa9ee318e6498167/image.jpg" 
-    alt="Screen capture showing Shopify checkout with AB Tasty persisting cookies throughout checkout" 
-    width="350"
-/>
+## Prerequisites
 
-## Why This Pixel Matters
+- AB Tasty implemented with template variables accessible in your environment.  
+- Celebrus **Data Collection for HTML5** library loaded (`window.CelebrusEQ` available).  
+- Basic knowledge of JavaScript or tag manager usage.  
+- Optionally, a **consent management solution** to respect visitor privacy regulations.
 
-- Shopify’s checkout extensibility was introduced to enhance security, preventing third-party scripts from executing. However, third-party data can still be captured in headless environments. Using a custom pixel allows you to natively track **customer journey milestones**.  
-- AB Tasty requires events to be sent in **batch ingestion format** to correctly attribute experiments.  
-- This pixel **bridges the gap** by listening to checkout events, enriching them with AB Tasty visitor and campaign context, and forwarding the data to the AB Tasty ingestion API.
+---
 
-## How It Works
-1. **Initialization**  
-   - Script wrapped in an IIFE to avoid polluting the global scope.  
-   - Console logging is added for observability in test and QA environments.  
+## Template Variables
 
-2. **Cookie Extraction**  
-   - Reads the `ABTasty` cookie.  
-   - Extracts:
-     - **Visitor ID (`vid`)** → AB Tasty unique visitor identifier.  
-     - **Campaigns (`c`)** → Map of campaign IDs and variation IDs.
-    
-   Example:
-   ```json
-   {
-     "vid": "visitor123",
-     "campaigns": { "1501519": "1870324", "1508732": "1879639" }
-   }
+| Variable          | Description                           | Example                          |
+|------------------|---------------------------------------|----------------------------------|
+| `{{campaignId}}`    | AB Tasty experiment ID                | `12345`                          |
+| `{{campaignName}}`  | AB Tasty experiment name              | `"Homepage Hero Test"`          |
+| `{{variationId}}`   | AB Tasty variant bucket ID            | `B`                              |
+| `{{variationName}}` | AB Tasty variant display name         | `"Variant B"`                   |
 
-3. **Payload Construction**  
-   - Builds a JSON payload conforming to AB Tasty’s **batch ingestion format**.  
-   - Appends `EVENT` or `TRANSACTION` objects depending on the checkout event type.  
+---
 
-4. **Payload Dispatch**  
-   - Sends payloads to **`https://ariane.abtasty.com/`** using `XMLHttpRequest`.  
-   - Logs success/error status to the console.  
+## Implementation Snippet
 
-5. **Shopify Checkout Integration**  
-   - Uses `analytics.subscribe` from Shopify Checkout Extensibility:  
-     - `checkout_started` → sends **EVENT payload**.  
-     - `checkout_completed` → sends **TRANSACTION payload** with order details.  
-     
-## Code Flow
-
-```mermaid
-flowchart TD
-    A["Shopify Checkout Events"] --> B["Pixel Script"]
-    B --> C["Extract Visitor ID + Campaigns from ABTasty Cookie"]
-    C --> D["Construct AB Tasty Batch Payload"]
-    D --> E["Send Payload via XMLHttpRequest"]
-    E --> F["AB Tasty Ingestion Endpoint"]
-```
-
-### Checkout Started Event Payload (`EVENT`)
-
-```json
-{
-  "cid": "647122547a691c3986656385348xxxxx",
-  "vid": "visitor123",
-  "c": { "1501519": "1870324", "1508732": "1879639" },
-  "dl": "https://shop.com/checkout",
-  "dr": "https://shop.com/cart",
-  "pt": "Checkout",
-  "cst": 1738210000000,
-  "t": "BATCH",
-  "h": [
-    {
-      "t": "EVENT",
-      "ec": "Action Tracking",
-      "ea": "checkout_started",
-      "qt": 502
-    }
-  ]
-}
-```
-
-### Checkout Completed Transaction Payload (`TRANSACTION`)
-
-```json
-{
-  "cid": "647122547a691c3986656385348xxxxx",
-  "vid": "visitor123",
-  "c": { "1501519": "1870324", "1508732": "1879639" },
-  "dl": "https://shop.com/checkout/thank_you",
-  "dr": "https://shop.com/checkout",
-  "pt": "Order Confirmation",
-  "cst": 1738210050000,
-  "t": "BATCH",
-  "h": [
-    {
-      "t": "TRANSACTION",
-      "tid": "order123",
-      "ta": "Purchase",
-      "tr": "99.99",
-      "tc": "GBP",
-      "ts": "4.99",
-      "icn": 3,
-      "qt": 503
-    }
-  ]
-}
-```
-
-## Further Documentation
-
-- [Shopify Web Pixels API – Checkout Started](https://shopify.dev/docs/api/web-pixels-api/standard-events/checkout_started)  
-- [Shopify Web Pixels API – Checkout Completed](https://shopify.dev/docs/api/web-pixels-api/standard-events/checkout_completed)  
-- [AB Tasty Transaction Tracking – Getting Started](https://docs.abtasty.com/client-side/transaction-tag-implementation/transaction-tracking-getting-started)
-
-## Full Working Snippet ABTASTY_CID to replace before using
+Insert the following code wherever both AB Tasty template variables and Celebrus library are available. For guidance on where to place code in AB Tasty, see [AB Tasty Universal Connector](https://docs.abtasty.com/integrations/custom-integrations/custom-integration-connector-with-a-rd-party-tool-push-data).
 
 ```javascript
-(function() {
-  const ABTASTY_CID = "647122547a691c3986656385348xxxxx";
-
-  // ------------------------
-  // Safe accessors
-  // ------------------------
-  function safeGetCookie(name) {
-    try {
-      const match = document.cookie.match(new RegExp(name + "=([^;]+)"));
-      const value = match ? decodeURIComponent(match[1]) : null;
-      console.log("[ABTasty] getCookie:", name, "=>", value);
-      return value;
-    } catch (e) {
-      console.error("[ABTasty] getCookie failed:", e.message);
-      return null;
-    }
-  }
-
-  // ------------------------
-  // Extract UID & multiple campaigns
-  // ------------------------
-  function extractUidAndCampaignsFromCookie() {
-    try {
-      const abCookie = safeGetCookie("ABTasty");
-      if (!abCookie) {
-        console.warn("[ABTasty] ABTasty cookie not found");
-        return { uid: null, campaigns: {} };
-      }
-
-      const params = new URLSearchParams(abCookie);
-      const uid = params.get("uid");
-      const th = params.get("th");
-
-      let campaigns = {};
-
-      if (th) {
-        // Split th= value by underscores to get all campaign tokens
-        const tokens = th.split("_");
-        tokens.forEach(token => {
-          // Extract first two numeric fields before first two dots
-          const match = token.match(/^(\d+)\.(\d+)/);
-          if (match) {
-            const campaignId = match[1];
-            const variationId = match[2];
-            campaigns[campaignId] = variationId;
-            console.log("[ABTasty] Found campaign/variation:", campaignId, variationId);
-          }
-        });
-      }
-
-      console.log("[ABTasty] Extracted UID:", uid);
-      return { uid, campaigns };
-    } catch (e) {
-      console.error("[ABTasty] Failed to extract UID/campaigns:", e.message);
-      return { uid: null, campaigns: {} };
-    }
-  }
-
-  function fetchABTastyData() {
-    const { uid, campaigns } = extractUidAndCampaignsFromCookie();
-    if (!uid) {
-      console.warn("[ABTasty] No UID in cookie, aborting tracking");
-      return { vid: null, campaigns: {} };
-    }
-    return { vid: uid, campaigns };
-  }
-
-  // ------------------------
-  // Payload builder
-  // ------------------------
-  function constructPayload(vid, campaigns, eventType, eventDetails = {}) {
-    if (!vid) {
-      console.error("[ABTasty] constructPayload failed: VID is missing");
-      return null;
-    }
-
-    const basePayload = {
-      cid: ABTASTY_CID,
-      vid,
-      c: campaigns || {},
-      dl: window.location.href,
-      dr: document.referrer || window.location.href,
-      pt: document.title || "",
-      de: "UTF-8",
-      cst: Date.now(),
-      sn: eventType === "EVENT" ? 1 : 3,
-      lv: eventType === "EVENT" ? "j0r0ZiOQ" : "tjCsBRQU",
-      tsv: eventType === "EVENT" ? "4.19.0" : "4.20.0",
-      tv: "latest",
-      tch: eventType === "EVENT" ? "e0214" : "b6c75",
-      t: "BATCH",
-      h: []
-    };
-
-    if (eventType === "EVENT") {
-      basePayload.h.push({
-        t: "EVENT",
-        ec: eventDetails.ec || "Action Tracking",
-        ea: eventDetails.ea || "checkout_started",
-        qt: eventDetails.qt || 502
-      });
-    } else if (eventType === "TRANSACTION") {
-      basePayload.h.push({
-        t: "TRANSACTION",
-        tid: eventDetails.tid,
-        ta: eventDetails.ta || "Purchase",
-        tr: eventDetails.tr,
-        tc: eventDetails.tc,
-        ts: eventDetails.ts,
-        icn: eventDetails.icn,
-        qt: eventDetails.qt || 503
-      });
-    }
-
-    console.log("[ABTasty] Payload constructed:", JSON.stringify(basePayload, null, 2));
-    return basePayload;
-  }
-
-  // ------------------------
-  // Send payload
-  // ------------------------
-  function sendBatch(payload) {
-    if (!payload) {
-      console.warn("[ABTasty] sendBatch called with empty payload");
-      return;
-    }
-    try {
-      console.log("[ABTasty] Sending batch payload to AB Tasty:", payload);
-      var xhr = new XMLHttpRequest();
-      xhr.open("POST", "https://ariane.abtasty.com/", true);
-      xhr.setRequestHeader("Content-Type", "text/plain");
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-          console.log("[ABTasty] Response status:", xhr.status, "Response text:", xhr.responseText);
-        }
-      };
-      xhr.send(JSON.stringify(payload));
-    } catch (e) {
-      console.error("[ABTasty] Failed to send batch:", e.message);
-    }
-  }
-
-  // ------------------------
-  // Transaction extractors (Shopify checkout)
-  // ------------------------
-  function getTransactionId(checkout) {
-    return checkout.order?.id || checkout.id;
-  }
-
-  function getTotalRevenue(checkout) {
-    return checkout.totalPrice?.amount || 0;
-  }
-
-  function getCurrency(checkout) {
-    return checkout.totalPrice?.currencyCode || "GBP";
-  }
-
-  function getItemCount(checkout) {
-    return checkout.lineItems.reduce((sum, item) => sum + item.quantity, 0);
-  }
-
-  function getTransactionShipping(checkout) {
-    return checkout.totalShippingPrice?.amount || 0;
-  }
-
-  // ------------------------
-  // Init tracking
-  // ------------------------
-  (function init() {
-    console.log("[ABTasty] Initialization started...");
-
-    // Subscribe to Shopify checkout_started event
-    analytics.subscribe("checkout_started", (event) => {
-      const { vid, campaigns } = fetchABTastyData();
-      if (!vid) {
-        console.warn("[ABTasty] No UID found, checkout_started not tracked");
-        return;
-      }
-
-      const payload = constructPayload(vid, campaigns, "EVENT", {
-        ec: "Action Tracking",
-        ea: "checkout_started",
-        qt: 502
-      });
-
-      sendBatch(payload);
-    });
-
-    // Subscribe to Shopify checkout_completed event
-    analytics.subscribe("checkout_completed", (event) => {
-      const checkout = event.data.checkout;
-      const { vid, campaigns } = fetchABTastyData();
-      if (!vid) {
-        console.warn("[ABTasty] No UID found, transaction not tracked");
-        return;
-      }
-
-      const payload = constructPayload(vid, campaigns, "TRANSACTION", {
-        tid: getTransactionId(checkout),
-        tr: getTotalRevenue(checkout),
-        tc: getCurrency(checkout),
-        icn: getItemCount(checkout),
-        ts: getTransactionShipping(checkout)
-      });
-
-      sendBatch(payload);
-    });
-
-    console.log("[ABTasty] Initialization completed");
-  })();
-
-})();
+if (window.CelebrusEQ) {
+  window.CelebrusEQ.send('ABTasty', {
+    campaignId: {{campaignId}},
+    campaignName: {{campaignName}},
+    variationId: {{variationId}},
+    variationName: {{variationName}}
+  });
+}
 ```
+
+**Notes:**
+
+- The `{{campaignId}}`, `{{campaignName}}`, `{{variationId}}`, and `{{variationName}}` placeholders are replaced at runtime by your tag manager or AB Tasty template engine.  
+- `window.CelebrusEQ.send` sends the data directly into the Celebrus event queue.  
+- The `if (window.CelebrusEQ)` check prevents errors if the library is not loaded.
+
+---
+
+## Data Flow Diagram
+
+```mermaid
+flowchart LR
+    A[AB Tasty Template Vars] --> B[Tag Manager / Custom HTML Snippet]
+    B --> C[Celebrus EQ JS (window.CelebrusEQ)]
+    C --> D[Celebrus Data Platform]
+
+    style A fill:#f9f,stroke:#333,stroke-width:1px
+    style B fill:#bbf,stroke:#333,stroke-width:1px
+    style C fill:#bfb,stroke:#333,stroke-width:1px
+    style D fill:#ffb,stroke:#333,stroke-width:1px
+```
+
+---
+
+## Outcome
+
+- Every AB Tasty experiment exposure is captured in Celebrus in real-time.  
+- Template-based integration ensures non-developers can deploy this snippet quickly.  
+- Enables cross-platform analytics, reporting, and personalization based on experiment participation.  
+- Provides a foundation for **advanced behavioural tracking and session stitching** across campaigns.
