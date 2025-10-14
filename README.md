@@ -53,7 +53,7 @@ if (window.CelebrusEQ) {
 ```mermaid
 flowchart LR
     A[AB Tasty Vars<br>] --> B[Tag Manager / Custom HTML Snippet]
-    B --> C[Celebrus EQ JS (window.CelebrusEQ)</a>]
+    B --> C[Celebrus EQ JS window.CelebrusEQ</a>]
 
     %% Real-time data flow arrow
     A ---|Data pushed in real-time via AB Tasty code and Connector above| C
